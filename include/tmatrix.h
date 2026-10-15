@@ -198,35 +198,85 @@ public:
   // сравнение
   bool operator==(const TDynamicMatrix& m) const noexcept
   {
+      if (sz != m.sz)
+          return false;
+      for (size_t i = 0; i < sz; i++)
+          if (pMem[i] != m.pMem[i])
+              return false;
+
+      return true;
   }
 
   // матрично-скалярные операции
   TDynamicMatrix operator*(const T& val)
   {
+      TDynamicMatrix res(sz);
+      for (size_t i = 0; i < sz; i++)
+          res[i] = pMem[i] * val;
+
+      return res;
   }
 
   // матрично-векторные операции
   TDynamicVector<T> operator*(const TDynamicVector<T>& v)
   {
+      TDynamicMatrix res(sz);
+      for (size_t i = 0; i < sz; i++)
+          res[i] = pMem[i] * v;
+
+      return res;
   }
 
   // матрично-матричные операции
   TDynamicMatrix operator+(const TDynamicMatrix& m)
   {
+      TDynamicMatrix res(sz);
+      for (size_t i = 0; i < sz; i++)
+          res[i] = pMem[i] + m.pMem[i];
+
+      return res;
   }
   TDynamicMatrix operator-(const TDynamicMatrix& m)
   {
+      TDynamicMatrix res(sz);
+      for (size_t i = 0; i < sz; i++)
+          res[i] = pMem[i] - m.pMem[i];
+      return res;
   }
   TDynamicMatrix operator*(const TDynamicMatrix& m)
   {
+      TDynamicMatrix res(sz);
+      for (size_t i = 0; i < sz; i++)
+          for (size_t j = 0; j < sz; j++)
+          {
+              T sum = T();
+              for (size_t k = 0; k < sz; k++)
+                  sum += pMem[i][k] * pMem[k][j];
+              res[i][j] = sum;
+          }
+
+      return res;
   }
 
   // ввод/вывод
   friend istream& operator>>(istream& istr, TDynamicMatrix& v)
   {
+      for (size_t i = 0; i < v.sz; i++)
+          for (size_t j = 0; j < v.sz; j++)
+              istr >> v[i][j];
+
+      return istr;
   }
   friend ostream& operator<<(ostream& ostr, const TDynamicMatrix& v)
   {
+      for (size_t i = 0; i < v.sz; i++)
+      {
+          for (size_t j = 0; j < v.sz; j++)
+              ostr << v[i][j] << ' ';
+          ostr << '\n'
+      }
+
+      return ostr;
   }
 };
 
