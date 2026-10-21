@@ -8,6 +8,10 @@
 #define __TDynamicMatrix_H__
 
 #include <iostream>
+//#include <cassert>
+//#include <algorithm>
+//#include <stdexcept>
+//#include <cstddef>
 
 using namespace std;
 
@@ -27,21 +31,26 @@ public:
   {
     if (sz == 0)
       throw out_of_range("Vector size should be greater than zero");
+    if (sz > static_cast<size_t>(MAX_VECTOR_SIZE))
+        throw out_of_range("Vector size is too large");
+
     pMem = new T[sz]();// {}; // У типа T д.б. констуктор по умолчанию
   }
   TDynamicVector(T* arr, size_t s) : sz(s)
   {
     assert(arr != nullptr && "TDynamicVector ctor requires non-nullptr arg");
+    if (sz > static_cast<size_t>(MAX_VECTOR_SIZE))
+        throw out_of_range("Vector size is too large");
+
     pMem = new T[sz];
     std::copy(arr, arr + sz, pMem);
   }
-  TDynamicVector(const TDynamicVector& v)
+  TDynamicVector(const TDynamicVector& v) : sz(v.sz), pMem(new T[v.sz])
   {
-      pMem = new T[sz];
       for (size_t i = 0; i < sz; i++)
           pMem[i] = v.pMem[i];
   }
-  TDynamicVector(TDynamicVector&& v) noexcept
+  TDynamicVector(TDynamicVector&& v) noexcept : sz(v.sz), pMem(v.pMem)
   {
       v.sz = 0;
       v.pMem = nullptr;
@@ -89,10 +98,16 @@ public:
   // индексация с контролем
   T& at(size_t ind)
   {
+      if (ind >= sz)
+          throw out_of_range("Vector index is out of range");
+
       return pMem[ind];
   }
   const T& at(size_t ind) const
   {
+      if (ind >= sz)
+          throw out_of_range("Vector index is out of range");
+
       return pMem[ind];
   }
 
@@ -137,6 +152,9 @@ public:
   // векторные операции
   TDynamicVector operator+(const TDynamicVector& v)
   {
+      if (sz != v.sz)
+          throw invalid_argument("Vector sizes do not match");
+
       TDynamicVector res(sz);
       for (size_t i = 0; i < sz; i++)
           res[i] = pMem[i] + v.pMem[i];
@@ -144,13 +162,19 @@ public:
   }
   TDynamicVector operator-(const TDynamicVector& v)
   {
+      if (sz != v.sz)
+          throw invalid_argument("Vector sizes do not match");
+
       TDynamicVector res(sz);
       for (size_t i = 0; i < sz; i++)
           res[i] = pMem[i] - v.pMem[i];
       return res;
   }
-  T operator*(const TDynamicVector& v) noexcept(noexcept(T()))
+  T operator*(const TDynamicVector& v)
   {
+      if (sz != v.sz)
+          throw invalid_argument("Vector sizes do not match");
+
       T sum = T();
       for (size_t i = 0; i < sz; i++)
           sum += pMem[i] * v.pMem[i];
@@ -189,11 +213,15 @@ class TDynamicMatrix : private TDynamicVector<TDynamicVector<T>>
 public:
   TDynamicMatrix(size_t s = 1) : TDynamicVector<TDynamicVector<T>>(s)
   {
+    if (s > static_cast<size_t>(MAX_MATRIX_SIZE))
+        throw out_of_range("Matrix size is too large");
+
     for (size_t i = 0; i < sz; i++)
       pMem[i] = TDynamicVector<T>(sz);
   }
 
   using TDynamicVector<TDynamicVector<T>>::operator[];
+  using TDynamicVector<TDynamicVector<T>>::size;
 
   // сравнение
   bool operator==(const TDynamicMatrix& m) const noexcept
@@ -220,7 +248,10 @@ public:
   // матрично-векторные операции
   TDynamicVector<T> operator*(const TDynamicVector<T>& v)
   {
-      TDynamicMatrix res(sz);
+      if (sz != v.size())
+          throw invalid_argument("Matrix and vector sizes do not match");
+
+      TDynamicVector res(sz);
       for (size_t i = 0; i < sz; i++)
           res[i] = pMem[i] * v;
 
@@ -230,6 +261,9 @@ public:
   // матрично-матричные операции
   TDynamicMatrix operator+(const TDynamicMatrix& m)
   {
+      if (sz != m.sz)
+          throw invalid_argument("Matrix sizes do not match");
+
       TDynamicMatrix res(sz);
       for (size_t i = 0; i < sz; i++)
           res[i] = pMem[i] + m.pMem[i];
@@ -238,6 +272,9 @@ public:
   }
   TDynamicMatrix operator-(const TDynamicMatrix& m)
   {
+      if (sz != m.sz)
+          throw invalid_argument("Matrix sizes do not match");
+
       TDynamicMatrix res(sz);
       for (size_t i = 0; i < sz; i++)
           res[i] = pMem[i] - m.pMem[i];
@@ -245,13 +282,15 @@ public:
   }
   TDynamicMatrix operator*(const TDynamicMatrix& m)
   {
+      if (sz != m.sz)
+          throw invalid_argument("Matrix sizes do not match");
       TDynamicMatrix res(sz);
       for (size_t i = 0; i < sz; i++)
           for (size_t j = 0; j < sz; j++)
           {
               T sum = T();
               for (size_t k = 0; k < sz; k++)
-                  sum += pMem[i][k] * pMem[k][j];
+                  sum += pMem[i][k] * m.pMem[k][j];
               res[i][j] = sum;
           }
 
@@ -273,7 +312,7 @@ public:
       {
           for (size_t j = 0; j < v.sz; j++)
               ostr << v[i][j] << ' ';
-          ostr << '\n'
+          ostr << '\n';
       }
 
       return ostr;
